@@ -3,6 +3,8 @@ package gloom
 import (
 	"hash"
 	"hash/fnv"
+
+	"github.com/alexanderbez/gloom/murmur32"
 )
 
 // REFS:
@@ -12,15 +14,9 @@ import (
 // https://github.com/jedisct1/rust-bloom-filter/blob/master/src/bloomfilter/lib.rs
 // https://llimllib.github.io/bloomfilter-tutorial/
 
-// h := fnv.New32a()
-
-// io.WriteString(h, "The fog is getting thicker!")
-// fmt.Println(h.Sum32() % 1024)
-// h.Reset()
-
 const (
-	// DefaultFalseNegProb is the default value for the probability of a false
-	// negative in a Bloom filter.
+	// DefaultFalseNegProb is the default value (1%) for the probability of a
+	// false negative in a Bloom filter.
 	DefaultFalseNegProb = 0.01
 )
 
@@ -46,7 +42,7 @@ type (
 	// Non-cryptographic hash functions FNV-1a and MurmurHash3 are used for
 	// speed performance.
 	BloomFilter struct {
-		fnvHasher hash.Hash32
+		h1, h2    hash.Hash32
 		bitVector []byte
 		m, n, k   uint
 	}
@@ -64,19 +60,26 @@ func NewBloomFilter(n uint, p float64) *BloomFilter {
 		n:         n,
 		m:         m,
 		k:         k,
-		fnvHasher: fnv.New32a(),
+		h1:        fnv.New32a(),
+		h2:        murmur32.New32(),
 		bitVector: make([]byte, m, m),
 	}
 }
 
-// fnvHash returns a 32 bit FNV-1a hash of a given slice. An error is returned
-// if the byte slice cannot be written to the underlying FNV-1a hash writer.
-func (bf *BloomFilter) fnvHash(b []byte) (uint32, error) {
-	defer bf.fnvHasher.Reset()
+func (bf *BloomFilter) hash(data []byte) (uint32, error) {
+	defer bf.h1.Reset()
+	defer bf.h2.Reset()
 
-	if _, err := bf.fnvHasher.Write(b); err != nil {
-		return 0, err
-	}
-
-	return bf.fnvHasher.Sum32(), nil
 }
+
+// // fnvHash returns a 32 bit FNV-1a hash of a given slice. An error is returned
+// // if the byte slice cannot be written to the underlying FNV-1a hash writer.
+// func (bf *BloomFilter) fnvHash(b []byte) (uint32, error) {
+// 	defer k1.fnvHasher.Reset()
+
+// 	if _, err := bf.fnvHasher.Write(b); err != nil {
+// 		return 0, err
+// 	}
+
+// 	return bf.fnvHasher.Sum32(), nil
+// }
