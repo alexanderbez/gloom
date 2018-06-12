@@ -1,4 +1,4 @@
-package murmur32
+package murmur128
 
 import "testing"
 
