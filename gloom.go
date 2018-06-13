@@ -1,10 +1,12 @@
 package gloom
 
 import (
+	"fmt"
 	"hash"
 	"hash/fnv"
+	"math"
 
-	"github.com/alexanderbez/gloom/murmur32"
+	"github.com/alexanderbez/gloom/murmur3"
 )
 
 // REFS:
@@ -15,9 +17,12 @@ import (
 // https://llimllib.github.io/bloomfilter-tutorial/
 
 const (
-	// DefaultFalseNegProb is the default value (1%) for the probability of a
-	// false negative in a Bloom filter.
-	DefaultFalseNegProb = 0.01
+	// DefaultFalsePosProb is the default value (1%) for the probability of a
+	// false positive in a Bloom filter.
+	DefaultFalsePosProb = 0.01
+
+	setBit bitValue = iota
+	unsetBit
 )
 
 type (
@@ -42,17 +47,27 @@ type (
 	// Non-cryptographic hash functions FNV-1a and MurmurHash3 are used for
 	// speed performance.
 	BloomFilter struct {
-		h1, h2    hash.Hash32
-		bitVector []byte
-		m, n, k   uint
+		h1, h2    hash.Hash64
+		bitVector []bitValue
+		m, n, k   uint64
 	}
+
+	// bitValue reflects the entry values in the bit vector. It indicates if a
+	// set item has potentially been set in the Bloom filter.
+	bitValue uint8
 )
 
 // NewBloomFilter returns a reference to a new Bloom filter. It requires a,
 // potentially approximate, set size n and false positive probability p. The
 // optimal value of k, number of hash functions, and m, bit vector size will be
 // used.
-func NewBloomFilter(n uint, p float64) *BloomFilter {
+func NewBloomFilter(n uint64, p float64) (*BloomFilter, error) {
+	if n == 0 {
+		return nil, fmt.Errorf("invalid set size parameter: %d", n)
+	} else if p <= 0 {
+		return nil, fmt.Errorf("invalid false positive probability parameter: %f", p)
+	}
+
 	m := optimalBitVectorSize(n, p)
 	k := optimalNumHash(m, n)
 
@@ -60,26 +75,76 @@ func NewBloomFilter(n uint, p float64) *BloomFilter {
 		n:         n,
 		m:         m,
 		k:         k,
-		h1:        fnv.New32a(),
-		h2:        murmur32.New32(),
-		bitVector: make([]byte, m, m),
-	}
+		h1:        fnv.New64a(),
+		h2:        murmur3.New64(),
+		bitVector: make([]bitValue, m, m),
+	}, nil
 }
 
-func (bf *BloomFilter) hash(data []byte) (uint32, error) {
+// Includes returns whether or not some arbitrary set item (byte slice) is most
+// likely in the Bloom filter. There is a possibility for a false positive with
+// the probability being under the Bloom filter's p value. An error is returned
+// if any hash function write fails.
+func (bf *BloomFilter) Includes(data []byte) (bool, error) {
+	if err := bf.hash(data); err != nil {
+		return false, err
+	}
+
+	var i uint64
+	for ; i < bf.k; i++ {
+		if bf.bitVector[bf.enhancedDoubleHash(i)] != setBit {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+// Set accepts a set item (byte slice) and sets the appropriate bits to 1 in
+// the bit vector. An error is returned if any hash function write fails.
+// Enhanced double hashing is used with two hash functions instead of k uniform
+// random hash functions.
+func (bf *BloomFilter) Set(data []byte) error {
+	if err := bf.hash(data); err != nil {
+		return err
+	}
+
+	var i uint64
+	for ; i < bf.k; i++ {
+		bf.bitVector[bf.enhancedDoubleHash(i)] = setBit
+	}
+
+	return nil
+}
+
+// hash accepts a set item (byte slice) and calculates the two hash values of
+// the item. The results are written to the each hash function's internal
+// state, so enhanced double hashing can continue in an outside step. Each
+// invocation of this call resets each hash function's internal state. An error
+// is returned if any hash function write fails.
+func (bf *BloomFilter) hash(data []byte) error {
 	defer bf.h1.Reset()
 	defer bf.h2.Reset()
 
+	var err error
+
+	_, err = bf.h1.Write(data)
+	if err != nil {
+		return err
+	}
+
+	_, err = bf.h2.Write(data)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-// // fnvHash returns a 32 bit FNV-1a hash of a given slice. An error is returned
-// // if the byte slice cannot be written to the underlying FNV-1a hash writer.
-// func (bf *BloomFilter) fnvHash(b []byte) (uint32, error) {
-// 	defer k1.fnvHasher.Reset()
-
-// 	if _, err := bf.fnvHasher.Write(b); err != nil {
-// 		return 0, err
-// 	}
-
-// 	return bf.fnvHasher.Sum32(), nil
-// }
+// enhancedDoubleHash returns the Bloom filter index for a given i such that
+// the i is indicative of the kth hash function using enhanced double hashing
+// to find the appropriate bit index in the bit vector.
+func (bf *BloomFilter) enhancedDoubleHash(i uint64) uint64 {
+	g := bf.h1.Sum64() + (i * bf.h2.Sum64()) + uint64(math.Pow(float64(i), 3))
+	return g % bf.m
+}
