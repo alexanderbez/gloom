@@ -9,13 +9,6 @@ import (
 	"github.com/alexanderbez/gloom/murmur3"
 )
 
-// REFS:
-//
-// https://en.wikipedia.org/wiki/Bloom_filter
-// http://citeseerx.ist.psu.edu/viewdoc/download;jsessionid=AF0A7F109B5F97C758DD773942A1054F?doi=10.1.1.152.579&rep=rep1&type=pdf
-// https://github.com/jedisct1/rust-bloom-filter/blob/master/src/bloomfilter/lib.rs
-// https://llimllib.github.io/bloomfilter-tutorial/
-
 const (
 	// DefaultFalsePosProb is the default value (1%) for the probability of a
 	// false positive in a Bloom filter.
