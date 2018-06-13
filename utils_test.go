@@ -4,9 +4,9 @@ import "testing"
 
 func TestOptimalBitVectorSize(t *testing.T) {
 	testCases := []struct {
-		n uint
+		n uint64
 		p float64
-		e uint
+		e uint64
 	}{
 		{n: 10, p: 0.04, e: 67},
 		{n: 5000, p: 0.01, e: 47926},
@@ -24,8 +24,8 @@ func TestOptimalBitVectorSize(t *testing.T) {
 
 func TestOptimalNumHash(t *testing.T) {
 	testCases := []struct {
-		m, n uint
-		e    uint
+		m, n uint64
+		e    uint64
 	}{
 		{m: 67, n: 10, e: 5},
 		{m: 47926, n: 5000, e: 7},
