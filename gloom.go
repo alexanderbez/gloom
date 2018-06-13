@@ -21,8 +21,8 @@ const (
 	// false positive in a Bloom filter.
 	DefaultFalsePosProb = 0.01
 
-	setBit bitValue = iota
-	unsetBit
+	unsetBit bitValue = 0
+	setBit   bitValue = 1
 )
 
 type (
@@ -50,6 +50,7 @@ type (
 		h1, h2    hash.Hash64
 		bitVector []bitValue
 		m, n, k   uint64
+		setBits   uint64
 	}
 
 	// bitValue reflects the entry values in the bit vector. It indicates if a
@@ -79,6 +80,23 @@ func NewBloomFilter(n uint64, p float64) (*BloomFilter, error) {
 		h2:        murmur3.New64(),
 		bitVector: make([]bitValue, m, m),
 	}, nil
+}
+
+// String implements the Stringer interface for a Bloom filter.
+func (bf *BloomFilter) String() string {
+	return fmt.Sprintf("{n: %d, m: %d, k: %d, setBits: %d}",
+		bf.n, bf.m, bf.k, bf.setBits,
+	)
+}
+
+// NumItemsApprox returns the approximate total number of items in the Bloom
+// filter.
+func (bf *BloomFilter) NumItemsApprox() uint64 {
+	m := float64(bf.m)
+	k := float64(bf.k)
+	x := float64(bf.setBits)
+
+	return uint64(-(m / k) * math.Log(1-(x/m)))
 }
 
 // Includes returns whether or not some arbitrary set item (byte slice) is most
@@ -111,7 +129,13 @@ func (bf *BloomFilter) Set(data []byte) error {
 
 	var i uint64
 	for ; i < bf.k; i++ {
-		bf.bitVector[bf.enhancedDoubleHash(i)] = setBit
+		j := bf.enhancedDoubleHash(i)
+
+		if bf.bitVector[j] == unsetBit {
+			bf.setBits++
+		}
+
+		bf.bitVector[j] = setBit
 	}
 
 	return nil
@@ -123,10 +147,10 @@ func (bf *BloomFilter) Set(data []byte) error {
 // invocation of this call resets each hash function's internal state. An error
 // is returned if any hash function write fails.
 func (bf *BloomFilter) hash(data []byte) error {
-	defer bf.h1.Reset()
-	defer bf.h2.Reset()
-
 	var err error
+
+	bf.h1.Reset()
+	bf.h2.Reset()
 
 	_, err = bf.h1.Write(data)
 	if err != nil {
