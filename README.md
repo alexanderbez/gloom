@@ -15,7 +15,7 @@ need for randomness in practice by Adam Kirsch and Michael Mitzenmacher in
 
 The enhanced double hash is of the form:
 
-g<sub>i</sub>(x) = H<sub>1</sub>(x) + iH<sub>2</sub>(x) + f(i), where
+g<sub>i</sub>(x) = (H<sub>1</sub>(x) + iH<sub>2</sub>(x) + f(i)) mod m, where
 
 H<sub>1</sub>
 is FNV-1a 64-bit, H<sub>2</sub> is Murmur3 64-bit, and f(i) = i<sup>3</sup>
