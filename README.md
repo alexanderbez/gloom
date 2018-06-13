@@ -10,7 +10,16 @@ hashing.
 Within gloom, enhanced double hashing is used to set bit positions. The choice
 for double hashing was shown to be effective without any loss in the asymptotic
 false positive probability, leading to less computation and potentially less
-need for randomness in practice by Adam Kirsch and Michael Mitzenmacher in [Less Hashing, Same Performance: Building a Better Bloom Filter](http://citeseerx.ist.psu.edu/viewdoc/download;jsessionid=AF0A7F109B5F97C758DD773942A1054F?doi=10.1.1.152.579&rep=rep1&type=pdf).
+need for randomness in practice by Adam Kirsch and Michael Mitzenmacher in
+[Less Hashing, Same Performance: Building a Better Bloom Filter](http://citeseerx.ist.psu.edu/viewdoc/download;jsessionid=AF0A7F109B5F97C758DD773942A1054F?doi=10.1.1.152.579&rep=rep1&type=pdf).
+
+The enhanced double hash is of the form:
+
+g<sub>i</sub>(x) = H<sub>1</sub>(x) + iH<sub>2</sub>(x) + f(i), where
+
+H<sub>1</sub>
+is FNV-1a 64-bit, H<sub>2</sub> is Murmur3 64-bit, and f(i) = i<sup>3</sup>
+
 
 ## What is a Bloom filter?
 
