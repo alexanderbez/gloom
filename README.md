@@ -1,7 +1,7 @@
 # gloom
 
 
-[![GoDoc](https://godoc.org/github.com/alexanderbez/gopq?status.svg)](https://godoc.org/github.com/alexanderbez/gopq)
+[![GoDoc](https://godoc.org/github.com/alexanderbez/gloom?status.svg)](https://godoc.org/github.com/alexanderbez/gloom)
 [![Build Status](https://travis-ci.org/alexanderbez/gloom.svg?branch=master)](https://travis-ci.org/alexanderbez/gloom)
 
 A simple and intuitive implementation of a Bloom filter using enhanced double
