@@ -3,6 +3,7 @@
 
 [![GoDoc](https://godoc.org/github.com/alexanderbez/gloom?status.svg)](https://godoc.org/github.com/alexanderbez/gloom)
 [![Build Status](https://travis-ci.org/alexanderbez/gloom.svg?branch=master)](https://travis-ci.org/alexanderbez/gloom)
+[![Go Report Card](https://goreportcard.com/badge/github.com/alexanderbez/gloom)](https://goreportcard.com/report/github.com/alexanderbez/gloom)
 
 A simple and intuitive implementation of a Bloom filter using enhanced double
 hashing.
